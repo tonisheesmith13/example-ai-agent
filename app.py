@@ -42,6 +42,58 @@ def generate_content_with_retry(client, model, contents, config):
         config=config
     )
 
+def search_vacation_activities(query: str) -> str:
+    """Searches Google for vacation destinations, attractions, and activities matching a query.
+    
+    Args:
+        query: The search query (e.g., 'top outdoor activities and sights in Patagonia').
+        
+    Returns:
+        A text summary of top attractions and activities with citation sources.
+    """
+    if not query or len(query.strip()) < 3:
+        return "Error: The search query is too short or empty. Guided resolution: Please retry with a specific, descriptive search query (e.g., 'adventure sports in Queenstown New Zealand')."
+        
+    try:
+        search_client = genai.Client()
+        response = search_client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=f"Perform a Google Search and summarize the top 3 activities and key travel attractions for: {query}. Keep it factual, descriptive, and return reference URLs.",
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+                temperature=0.2
+            )
+        )
+        return response.text
+    except Exception as e:
+        return f"Error occurred during search: {str(e)}. Guided resolution: The search service is currently experiencing high load. Please try re-formulating the search query to be more specific or try again shortly."
+
+def check_travel_advisories_and_restrictions(destination: str) -> str:
+    """Retrieves travel advisories, entry requirements, or safety guidelines for a destination.
+    
+    Args:
+        destination: The target country or city (e.g., 'Peru' or 'Costa Rica').
+        
+    Returns:
+        Safety advisories, entry requirements, or a healthy travel overview.
+    """
+    if not destination or len(destination.strip()) < 2:
+        return "Error: Destination name is too short or empty. Guided resolution: Please provide a valid country or city name (e.g., 'Colombia')."
+        
+    try:
+        advisory_client = genai.Client()
+        response = advisory_client.models.generate_content(
+            model="gemini-3.5-flash",
+            contents=f"Provide any essential travel safety tips, entry/visa requirements, or health advisories for travelers visiting: {destination}.",
+            config=types.GenerateContentConfig(
+                tools=[types.Tool(google_search=types.GoogleSearch())],
+                temperature=0.2
+            )
+        )
+        return response.text
+    except Exception as e:
+        return f"Error retrieving travel advisories: {str(e)}. Guided resolution: Unable to contact government advisory databases. Please proceed with standard precautions or try again."
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -137,7 +189,11 @@ def generate_final_plan(client, history_str, search_query):
         model="gemini-3.5-flash",
         contents=planning_prompt,
         config=types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())],
+            tools=[
+                types.Tool(google_search=types.GoogleSearch()),
+                search_vacation_activities,
+                check_travel_advisories_and_restrictions
+            ],
             temperature=0.7
         )
     )
