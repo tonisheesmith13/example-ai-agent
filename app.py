@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 app = Flask(__name__)
 
@@ -28,6 +29,19 @@ class TurnResponse(BaseModel):
         description="A search query for Google to find specific recommendations (e.g. 'best luxury eco-resorts and hikes in Costa Rica'). Empty if ready_to_plan is False."
     )
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    before_sleep=lambda retry_state: print(f"⚠️ Flask API: Gemini API call failed or stalled. Retrying in {retry_state.next_action.sleep:.1f}s (Attempt {retry_state.attempt_number}/3)...", file=sys.stderr),
+    reraise=True
+)
+def generate_content_with_retry(client, model, contents, config):
+    return client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config
+    )
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -42,7 +56,7 @@ def chat():
         questions_asked = sum(1 for turn in history if turn.get('role') == 'agent')
         max_questions = 3
         
-        client = genai.Client()
+        client = genai.Client(http_options=types.HttpOptions(timeout=25_000))
         
         # Turn history list into text block for model evaluation
         history_str = ""
@@ -74,7 +88,8 @@ def chat():
         )
         
         # Request evaluation from Gemini with structured outputs
-        response = client.models.generate_content(
+        response = generate_content_with_retry(
+            client=client,
             model="gemini-3.5-flash",
             contents=prompt,
             config=types.GenerateContentConfig(
@@ -118,7 +133,8 @@ def generate_final_plan(client, history_str, search_query):
     )
     
     # Call Gemini with Google Search Grounding
-    planning_response = client.models.generate_content(
+    planning_response = generate_content_with_retry(
+        client=client,
         model="gemini-3.5-flash",
         contents=planning_prompt,
         config=types.GenerateContentConfig(

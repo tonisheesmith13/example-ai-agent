@@ -4,6 +4,7 @@ import sys
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
+from tenacity import retry, stop_after_attempt, wait_exponential
 
 # Define terminal colors
 COLOR_RESET = "\033[0m"
@@ -27,6 +28,19 @@ class TurnResponse(BaseModel):
         description="A search query for Google to find specific recommendations (e.g. 'best luxury eco-resorts and hikes in Costa Rica'). Empty if ready_to_plan is False."
     )
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=2, max=10),
+    before_sleep=lambda retry_state: print(f"\n\033[1;31m⚠️ API call stalled or failed. Retrying in {retry_state.next_action.sleep:.1f}s (Attempt {retry_state.attempt_number}/3)...\033[0m", file=sys.stderr),
+    reraise=True
+)
+def generate_content_with_retry(client, model, contents, config):
+    return client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=config
+    )
+
 def load_api_key():
     # Attempt to load the Gemini API Key
     key_path = "/home/tonisheesmith/gemini_key.txt"
@@ -42,7 +56,7 @@ def main():
     load_api_key()
     
     try:
-        client = genai.Client()
+        client = genai.Client(http_options=types.HttpOptions(timeout=25_000))
     except Exception as e:
         print(f"{COLOR_ERROR}Failed to initialize GenAI Client: {e}{COLOR_RESET}")
         sys.exit(1)
@@ -96,7 +110,8 @@ def main():
             )
             
             # Request decision from Gemini with structured outputs
-            response = client.models.generate_content(
+            response = generate_content_with_retry(
+                client=client,
                 model="gemini-3.5-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
@@ -158,7 +173,8 @@ def main():
         )
         
         # Call Gemini with Google Search Grounding
-        planning_response = client.models.generate_content(
+        planning_response = generate_content_with_retry(
+            client=client,
             model="gemini-3.5-flash",
             contents=planning_prompt,
             config=types.GenerateContentConfig(
