@@ -473,10 +473,12 @@
         const restartBtn = document.getElementById('restart-btn');
         const chatCard = document.getElementById('chat-card');
 
-        // Store active conversation state
-        let conversationSession = [
-            { role: 'agent', text: "Welcome! I am ready to design your perfect custom travel plan. Let's start with the basics: What kind of trip are you dreaming of?" }
-        ];
+        // Manage stateful Session ID
+        let sessionId = localStorage.getItem('travel_agent_session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+            localStorage.setItem('travel_agent_session_id', sessionId);
+        }
 
         // Enable enter key submission
         userInput.addEventListener('keydown', (e) => {
@@ -499,6 +501,57 @@
             resetApp();
         });
 
+        async function loadSessionHistory() {
+            try {
+                const response = await fetch(`/api/history?session_id=${sessionId}`);
+                if (!response.ok) return;
+                const data = await response.json();
+                
+                if (data.history && data.history.length > 0) {
+                    chatHistory.innerHTML = '';
+                    
+                    let questionCount = 0;
+                    let lastMessage = null;
+                    
+                    data.history.forEach((turn, idx) => {
+                        if (turn.role === 'system') {
+                            const systemBubble = document.createElement('div');
+                            systemBubble.className = 'bubble system';
+                            systemBubble.style.background = 'rgba(14, 165, 233, 0.05)';
+                            systemBubble.style.border = '1px solid rgba(14, 165, 233, 0.2)';
+                            systemBubble.style.color = 'var(--text-muted)';
+                            systemBubble.style.fontSize = '0.85rem';
+                            systemBubble.style.fontStyle = 'italic';
+                            systemBubble.style.padding = '0.6rem 1rem';
+                            systemBubble.style.borderRadius = '12px';
+                            systemBubble.style.margin = '0.75rem 0';
+                            systemBubble.style.alignSelf = 'center';
+                            systemBubble.style.width = '90%';
+                            systemBubble.style.boxShadow = 'inset 0 1px 2px rgba(0,0,0,0.1)';
+                            systemBubble.innerHTML = `🧠 <em>System Memory Consolidated: ${turn.text.replace('[Summary of previous preferences: ', '').replace(']', '')}</em>`;
+                            chatHistory.appendChild(systemBubble);
+                        } else {
+                            let qNum = null;
+                            if (turn.role === 'agent') {
+                                if (idx > 0) { 
+                                    questionCount++;
+                                    qNum = questionCount;
+                                }
+                            }
+                            appendBubble(turn.role, turn.text, qNum);
+                            lastMessage = turn;
+                        }
+                    });
+                    
+                    if (lastMessage && lastMessage.role === 'agent' && lastMessage.text.includes('**Destination**')) {
+                        renderTravelPlan(lastMessage.text, []);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load session history:", err);
+            }
+        }
+
         async function submitResponse() {
             const text = userInput.value.trim();
             if (!text) return;
@@ -507,20 +560,19 @@
             userInput.value = '';
             setInteractionState(false);
 
-            // Add user bubble to UI and state
+            // Add user bubble to UI
             appendBubble('user', text);
-            conversationSession.push({ role: 'user', text: text });
 
             // Show typing indicator
             typingLoader.style.display = 'block';
             scrollToBottom();
 
             try {
-                // Call Flask API
+                // Call Flask API with persistent session state
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ history: conversationSession })
+                    body: JSON.stringify({ session_id: sessionId, text: text })
                 });
 
                 if (!response.ok) throw new Error('API server returned an error');
@@ -535,12 +587,9 @@
                 }
 
                 if (data.ready_to_plan) {
-                    // Plan is ready! Present it beautifully
                     renderTravelPlan(data.plan_text, data.sources);
                 } else {
-                    // More clarifying questions
                     appendBubble('agent', data.next_question, data.questions_asked);
-                    conversationSession.push({ role: 'agent', text: data.next_question });
                     setInteractionState(true);
                 }
 
@@ -582,14 +631,10 @@
         }
 
         function renderTravelPlan(markdownText, sources) {
-            // Disable interview card completely
             chatCard.style.display = 'none';
-
-            // Show and populate plan section
             travelPlanSection.style.display = 'block';
             planMarkdownOutput.innerHTML = marked.parse(markdownText);
 
-            // Populate citations
             if (sources && sources.length > 0) {
                 sourcesList.innerHTML = '';
                 sources.forEach(src => {
@@ -608,33 +653,44 @@
                 sourcesContainer.style.display = 'none';
             }
 
-            // Scroll down to the plan card
             travelPlanSection.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function resetApp() {
-            // Reset state
-            conversationSession = [
-                { role: 'agent', text: "Welcome! I am ready to design your perfect custom travel plan. Let's start with the basics: What kind of trip are you dreaming of?" }
-            ];
-
-            // Reset UI
-            chatHistory.innerHTML = `
-                <div class="bubble agent">
-                    <div class="meta-info">🤖 AI Travel Agent</div>
-                    Welcome! I am ready to design your perfect custom travel plan. Let's start with the basics: <strong>What kind of trip are you dreaming of?</strong>
-                </div>
-            `;
-            chatCard.style.display = 'block';
-            travelPlanSection.style.display = 'none';
-            setInteractionState(true);
+        async function resetApp() {
+            try {
+                setInteractionState(false);
+                typingLoader.style.display = 'block';
+                
+                await fetch('/api/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+                
+                typingLoader.style.display = 'none';
+                
+                chatHistory.innerHTML = `
+                    <div class="bubble agent">
+                        <div class="meta-info">🤖 AI Travel Agent</div>
+                        Welcome! I am ready to design your perfect custom travel plan. Let's start with the basics: <strong>What kind of trip are you dreaming of?</strong>
+                    </div>
+                `;
+                chatCard.style.display = 'block';
+                travelPlanSection.style.display = 'none';
+                setInteractionState(true);
+            } catch (err) {
+                typingLoader.style.display = 'none';
+                setInteractionState(true);
+                alert("Failed to reset session. Please try again.");
+            }
         }
 
         function scrollToBottom() {
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        // Focus input on load
+        // Initialize state on startup
+        loadSessionHistory();
         userInput.focus();
     </script>
 </body>
