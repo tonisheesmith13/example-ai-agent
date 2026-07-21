@@ -97,7 +97,7 @@ def main():
             
             # Request decision from Gemini with structured outputs
             response = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-3.5-flash",
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
@@ -159,7 +159,7 @@ def main():
         
         # Call Gemini with Google Search Grounding
         planning_response = client.models.generate_content(
-            model="gemini-2.0-flash",
+            model="gemini-3.5-flash",
             contents=planning_prompt,
             config=types.GenerateContentConfig(
                 tools=[types.Tool(google_search=types.GoogleSearch())],
