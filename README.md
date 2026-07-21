@@ -8,7 +8,7 @@ This agent guides users through an interactive, personalized interview of **at m
 
 ## ✨ Features
 - **Structured Interview Phase**: Uses Gemini's **Structured Outputs** (via Pydantic models) to intelligently decide when it has enough info to recommend, or dynamically formulate the next question (max 3).
-- **Google Search Grounding**: Leverages Gemini's native Google Search capabilities to find real-world, up-to-date destinations, activities, and hotels.
+- **Google Search Grounding**: Leverages Gemini's native Google Search capabilities to find real-world, up-to-date destinations and activities.
 - **Rich Terminal UI**: Beautiful ANSI-styled interface that behaves like a professional human travel agent.
 - **Exportable Travel Plans**: Automatically saves the final tailored travel plan along with Google Search citation links to `travel_plan.md` for easy access.
 
@@ -60,7 +60,7 @@ Ensure you have Python 3.10+ installed.
    ```bash
    export GEMINI_API_KEY="your-api-key-here"
    ```
-   *(The script will also automatically attempt to read the key from `/home/tonisheesmith/gemini_key.txt` if available in your current environment).*
+    *(The script will also automatically attempt to read the key from `/home/<user>/gemini_key.txt` (expanded as `~/gemini_key.txt`) if available in your current environment).*
 
 ---
 
@@ -95,5 +95,4 @@ Follow the prompts and enjoy designing your dream vacation!
 At the end of your session, the agent creates a custom **`travel_plan.md`** file that contains:
 1. **Destination**: A single, custom recommendation explaining why it suits you.
 2. **Top 3 Recommended Activities**: Selected attractions with short descriptions and practical tips.
-3. **Hotel / Stay Options**: At least two specific recommendations spanning different styles and price points.
-4. **Google Search Sources**: Transparent clickable citation links verifying the real-world options.
+3. **Google Search Sources**: Transparent clickable citation links verifying the real-world options.

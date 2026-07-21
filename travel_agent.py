@@ -19,7 +19,7 @@ COLOR_ERROR = "\033[1;31m"   # Red
 # Define the Pydantic schema for structured output during the interview phase
 class TurnResponse(BaseModel):
     ready_to_plan: bool = Field(
-        description="Set to True if you have sufficient details to recommend a destination, hotels, and activities, or if you must stop because 3 questions have already been asked."
+        description="Set to True if you have sufficient details to recommend a destination and activities, or if you must stop because 3 questions have already been asked."
     )
     next_question: str = Field(
         description="The next friendly, targeted clarifying question to ask the user. Keep it brief. Empty if ready_to_plan is True."
@@ -43,13 +43,13 @@ def generate_content_with_retry(client, model, contents, config):
 
 def load_api_key():
     # Attempt to load the Gemini API Key
-    key_path = "/home/tonisheesmith/gemini_key.txt"
+    key_path = os.path.expanduser("~/gemini_key.txt")
     if os.path.exists(key_path):
         with open(key_path, "r") as f:
             api_key = f.read().strip()
         os.environ["GEMINI_API_KEY"] = api_key
     elif "GEMINI_API_KEY" not in os.environ:
-        print(f"{COLOR_ERROR}Error: GEMINI_API_KEY environment variable not set, and gemini_key.txt not found.{COLOR_RESET}")
+        print(f"{COLOR_ERROR}Error: GEMINI_API_KEY environment variable not set, and ~/gemini_key.txt not found.{COLOR_RESET}")
         sys.exit(1)
 
 def main():
@@ -97,7 +97,7 @@ def main():
             prompt = (
                 f"You are a friendly, professional travel agent.\n"
                 f"Your task is to review the conversation history and decide if you have enough details "
-                f"to create a comprehensive travel plan (including destination, 3 activities, and 2 hotel options), "
+                f"to create a comprehensive travel plan (including destination and 3 activities), "
                 f"or if you need to ask another clarifying question.\n\n"
                 f"Constraints:\n"
                 f"- You can ask at most {max_questions} questions.\n"
@@ -126,7 +126,7 @@ def main():
             # Enforce hard limit on number of questions
             if questions_asked >= max_questions:
                 ready_to_plan = True
-                search_query = turn_data.search_query or f"best destinations and hotels for {user_input}"
+                search_query = turn_data.search_query or f"best destinations and activities for {user_input}"
                 break
                 
             if turn_data.ready_to_plan:
@@ -149,7 +149,7 @@ def main():
         # Compile preferences for the search phase
         print(f"\n{COLOR_SEARCH}🔍 Compiling preferences and searching Google...{COLOR_RESET}")
         if not search_query:
-            search_query = f"top vacation destinations hotels and activities matching user preferences"
+            search_query = f"top vacation destinations and activities matching user preferences"
             
         print(f"{COLOR_SEARCH}   Target search: \"{search_query}\"{COLOR_RESET}\n")
         
@@ -167,8 +167,7 @@ def main():
             f"{history_summary}\n"
             f"Please structure your response in beautiful Markdown, including:\n"
             f"1. **Destination**: A single, specific recommended city or region with a compelling explanation of why it fits the user.\n"
-            f"2. **Top 3 Recommended Activities**: At least three distinct activities or attractions complete with short descriptions and practical tips.\n"
-            f"3. **Hotel / Stay Options**: At least two specific hotel recommendations (e.g. range of prices/styles) with brief descriptions and why they are recommended.\n\n"
+            f"2. **Top 3 Recommended Activities**: At least three distinct activities or attractions complete with short descriptions and practical tips.\n\n"
             f"Ensure the formatting is rich, polished, and exciting, ready to present directly to a client!"
         )
         

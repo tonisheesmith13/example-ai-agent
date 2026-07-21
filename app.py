@@ -10,17 +10,17 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 app = Flask(__name__)
 
 # Load API key
-key_path = "/home/tonisheesmith/gemini_key.txt"
+key_path = os.path.expanduser("~/gemini_key.txt")
 if os.path.exists(key_path):
     with open(key_path, "r") as f:
         api_key = f.read().strip()
     os.environ["GEMINI_API_KEY"] = api_key
 elif "GEMINI_API_KEY" not in os.environ:
-    print("Warning: GEMINI_API_KEY environment variable not set, and gemini_key.txt not found.")
+    print("Warning: GEMINI_API_KEY environment variable not set, and ~/gemini_key.txt not found.")
 
 class TurnResponse(BaseModel):
     ready_to_plan: bool = Field(
-        description="Set to True if you have sufficient details to recommend a destination, hotels, and activities, or if you must stop because 3 questions have already been asked."
+        description="Set to True if you have sufficient details to recommend a destination and activities, or if you must stop because 3 questions have already been asked."
     )
     next_question: str = Field(
         description="The next friendly, targeted clarifying question to ask the user. Keep it brief. Empty if ready_to_plan is True."
@@ -68,14 +68,14 @@ def chat():
         if questions_asked >= max_questions:
             # Generate search query based on user's initial dream
             initial_user_input = next((turn.get('text') for turn in history if turn.get('role') == 'user'), "nature holiday")
-            search_query = f"top travel destinations and hotels matching {initial_user_input}"
+            search_query = f"top travel destinations and activities matching {initial_user_input}"
             return generate_final_plan(client, history_str, search_query)
             
         # Interview evaluation prompt
         prompt = (
             f"You are a friendly, professional travel agent.\n"
             f"Your task is to review the conversation history and decide if you have enough details "
-            f"to create a comprehensive travel plan (including destination, 3 activities, and 2 hotel options), "
+            f"to create a comprehensive travel plan (including destination and 3 activities), "
             f"or if you need to ask another clarifying question.\n\n"
             f"Constraints:\n"
             f"- You can ask at most {max_questions} questions.\n"
@@ -127,8 +127,7 @@ def generate_final_plan(client, history_str, search_query):
         f"{history_str}\n"
         f"Please structure your response in beautiful Markdown, including:\n"
         f"1. **Destination**: A single, specific recommended city or region with a compelling explanation of why it fits the user.\n"
-        f"2. **Top 3 Recommended Activities**: At least three distinct activities or attractions complete with short descriptions and practical tips.\n"
-        f"3. **Hotel / Stay Options**: At least two specific hotel recommendations (e.g. range of prices/styles) with brief descriptions and why they are recommended.\n\n"
+        f"2. **Top 3 Recommended Activities**: At least three distinct activities or attractions complete with short descriptions and practical tips.\n\n"
         f"Ensure the formatting is rich, polished, and exciting, ready to present directly to a client!"
     )
     
