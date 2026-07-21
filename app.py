@@ -103,7 +103,7 @@ def chat():
         
         # If the model is ready to plan, or if we hit the limit
         if turn_data.ready_to_plan or questions_asked >= max_questions:
-            search_q = turn_data.search_query or f"top travel destinations and hotels matching user preferences"
+            search_q = turn_data.search_query or "top travel destinations and hotels matching user preferences"
             return generate_final_plan(client, history_str, search_q)
             
         # Otherwise, return the next clarifying question

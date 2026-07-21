@@ -62,7 +62,7 @@ def main():
         sys.exit(1)
         
     print(f"{COLOR_HEADER}=====================================================")
-    print(f"        🌴  WELCOME TO YOUR AI TRAVEL AGENT  🌴")
+    print("        🌴  WELCOME TO YOUR AI TRAVEL AGENT  🌴")
     print(f"====================================================={COLOR_RESET}")
     print("Let's design your perfect custom vacation! I will ask you")
     print("up to 3 clarifying questions, search Google for real-time")
@@ -149,7 +149,7 @@ def main():
         # Compile preferences for the search phase
         print(f"\n{COLOR_SEARCH}🔍 Compiling preferences and searching Google...{COLOR_RESET}")
         if not search_query:
-            search_query = f"top vacation destinations and activities matching user preferences"
+            search_query = "top vacation destinations and activities matching user preferences"
             
         print(f"{COLOR_SEARCH}   Target search: \"{search_query}\"{COLOR_RESET}\n")
         
@@ -186,7 +186,7 @@ def main():
         
         # Display the final plan
         print(f"{COLOR_PLAN}=====================================================")
-        print(f"               🌴 YOUR TAILORED TRAVEL PLAN 🌴")
+        print("               🌴 YOUR TAILORED TRAVEL PLAN 🌴")
         print(f"====================================================={COLOR_RESET}\n")
         print(plan_text)
         print(f"\n{COLOR_PLAN}====================================================={COLOR_RESET}")
