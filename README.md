@@ -2,12 +2,12 @@
 
 Welcome to **example-ai-agent**, a simple, premium terminal-based AI Travel Agent built with the official modern Google GenAI SDK. 
 
-This agent guides users through an interactive, personalized interview of **at most 5 clarifying questions** to learn about their vacation preferences, budget, interests, and style. It then utilizes **Google Search grounding** to fetch live information and compile a complete travel itinerary customized for them.
+This agent guides users through an interactive, personalized interview of **at most 3 clarifying questions** to learn about their vacation preferences, budget, interests, and style. It then utilizes **Google Search grounding** to fetch live information and compile a complete travel itinerary customized for them.
 
 ---
 
 ## ✨ Features
-- **Structured Interview Phase**: Uses Gemini's **Structured Outputs** (via Pydantic models) to intelligently decide when it has enough info to recommend, or dynamically formulate the next question (max 5).
+- **Structured Interview Phase**: Uses Gemini's **Structured Outputs** (via Pydantic models) to intelligently decide when it has enough info to recommend, or dynamically formulate the next question (max 3).
 - **Google Search Grounding**: Leverages Gemini's native Google Search capabilities to find real-world, up-to-date destinations, activities, and hotels.
 - **Rich Terminal UI**: Beautiful ANSI-styled interface that behaves like a professional human travel agent.
 - **Exportable Travel Plans**: Automatically saves the final tailored travel plan along with Google Search citation links to `travel_plan.md` for easy access.

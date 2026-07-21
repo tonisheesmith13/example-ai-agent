@@ -18,7 +18,7 @@ COLOR_ERROR = "\033[1;31m"   # Red
 # Define the Pydantic schema for structured output during the interview phase
 class TurnResponse(BaseModel):
     ready_to_plan: bool = Field(
-        description="Set to True if you have sufficient details to recommend a destination, hotels, and activities, or if you must stop because 5 questions have already been asked."
+        description="Set to True if you have sufficient details to recommend a destination, hotels, and activities, or if you must stop because 3 questions have already been asked."
     )
     next_question: str = Field(
         description="The next friendly, targeted clarifying question to ask the user. Keep it brief. Empty if ready_to_plan is True."
@@ -51,14 +51,14 @@ def main():
     print(f"        🌴  WELCOME TO YOUR AI TRAVEL AGENT  🌴")
     print(f"====================================================={COLOR_RESET}")
     print("Let's design your perfect custom vacation! I will ask you")
-    print("up to 5 clarifying questions, search Google for real-time")
+    print("up to 3 clarifying questions, search Google for real-time")
     print("options, and present your tailored travel plan.")
     print("-----------------------------------------------------\n")
     
     # Initialize history and state
     conversation_history = []
     questions_asked = 0
-    max_questions = 5
+    max_questions = 3
     
     try:
         # Prompt user for initial input
