@@ -66,7 +66,19 @@ Ensure you have Python 3.10+ installed.
 
 ## 🎮 Running the Agent
 
-Start the interactive session directly from your terminal:
+### Option A: Interactive Web UI (Recommended)
+You can interact with your agent using a stunning glassmorphic web browser interface.
+
+Start the Flask web server:
+```bash
+python3 app.py
+```
+Open [http://localhost:5000](http://localhost:5000) in your browser and start planning!
+
+---
+
+### Option B: Terminal Command-Line Interface
+Alternatively, run the interactive session directly from your terminal:
 ```bash
 ./travel_agent.py
 ```
