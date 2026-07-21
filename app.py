@@ -56,7 +56,7 @@ def chat():
         questions_asked = sum(1 for turn in history if turn.get('role') == 'agent')
         max_questions = 3
         
-        client = genai.Client(http_options=types.HttpOptions(timeout=25_000))
+        client = genai.Client(http_options=types.HttpOptions(timeout=120_000))
         
         # Turn history list into text block for model evaluation
         history_str = ""

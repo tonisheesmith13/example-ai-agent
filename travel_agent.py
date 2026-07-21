@@ -56,7 +56,7 @@ def main():
     load_api_key()
     
     try:
-        client = genai.Client(http_options=types.HttpOptions(timeout=25_000))
+        client = genai.Client(http_options=types.HttpOptions(timeout=120_000))
     except Exception as e:
         print(f"{COLOR_ERROR}Failed to initialize GenAI Client: {e}{COLOR_RESET}")
         sys.exit(1)
